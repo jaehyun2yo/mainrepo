@@ -1,0 +1,30 @@
+{
+  "healthcheck": [
+    {
+      "name": "yjlaser_website (Vercel)",
+      "url": "https://yjlaser.com",
+      "project": "yjlaser_website",
+      "type": "frontend",
+      "description": "Next.js 15 웹사이트 — Vercel 배포",
+      "timeout": 10000
+    },
+    {
+      "name": "NestJS API (Railway)",
+      "url": "https://yjlaser-api.up.railway.app/api/v1/health",
+      "project": "yjlaser_website",
+      "type": "backend",
+      "description": "NestJS 백엔드 API — Railway Docker 배포",
+      "timeout": 10000
+    },
+    {
+      "name": "computeroff (Railway)",
+      "url": "https://computeroff.up.railway.app/api/health",
+      "project": "computeroff",
+      "type": "backend",
+      "description": "FastAPI PC 모니터링 서버 — Railway NIXPACKS 배포",
+      "timeout": 10000
+    }
+  ],
+  "gitPullIntervalMs": 300000,
+  "port": 3333
+}

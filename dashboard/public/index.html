@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YJLaser 대시보드</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1>YJLaser 대시보드</h1>
+        <span class="header-subtitle">모노레포 통합 모니터링</span>
+      </div>
+      <div class="header-right">
+        <div class="git-status" id="gitStatus">
+          <span>Git:</span>
+          <span id="gitStatusText">...</span>
+        </div>
+        <span class="status-badge live" id="pollBadge">
+          <span class="dot"></span>
+          <span id="pollText">Live</span>
+        </span>
+        <span class="next-refresh" id="nextRefresh"></span>
+        <button class="btn-refresh" id="refreshBtn" onclick="manualRefresh()" title="즉시 새로고침">&#8635;</button>
+        <span class="last-updated" id="lastUpdated">---</span>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <!-- Summary bar -->
+    <div class="summary-bar" id="summaryBar">
+      <div class="summary-item">
+        <span class="summary-icon" style="color:var(--accent)">&#9881;</span>
+        <span class="summary-label">전체 진행률</span>
+        <span class="summary-value" id="summaryProgress">---</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-icon" style="color:var(--yellow)">&#9744;</span>
+        <span class="summary-label">미완료 TODO</span>
+        <span class="summary-value" id="summaryTodo">---</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-icon" style="color:var(--green)">&#9679;</span>
+        <span class="summary-label">서비스 상태</span>
+        <span class="summary-value" id="summaryHealth">---</span>
+      </div>
+    </div>
+
+    <!-- Grid layout: 3 sections -->
+    <div class="grid">
+
+      <!-- Section 1: 진행상황 (Roadmap) -->
+      <div class="card" id="progressCard">
+        <div class="card-header">
+          <span class="card-title">
+            <span class="card-icon">&#128202;</span>
+            진행상황
+          </span>
+          <span class="card-badge" id="roadmapBadge" style="background:var(--accent-soft);color:var(--accent)">...</span>
+        </div>
+        <div class="card-body" id="roadmapBody">
+          <div class="skeleton"></div>
+          <div class="skeleton" style="width:70%"></div>
+          <div class="skeleton" style="width:85%"></div>
+        </div>
+      </div>
+
+      <!-- Section 2: 헬스체크 -->
+      <div class="card" id="healthCard">
+        <div class="card-header">
+          <span class="card-title">
+            <span class="card-icon">&#128994;</span>
+            헬스체크
+          </span>
+          <span class="card-badge" id="healthBadge" style="background:var(--green-soft);color:var(--green)">...</span>
+        </div>
+        <div class="card-body" id="healthBody">
+          <div class="skeleton"></div>
+          <div class="skeleton" style="width:80%"></div>
+          <div class="skeleton" style="width:65%"></div>
+        </div>
+      </div>
+
+      <!-- Section 3: 프로젝트 정보 (버전 + 최근 커밋) -->
+      <div class="card" id="projectsCard">
+        <div class="card-header">
+          <span class="card-title">
+            <span class="card-icon">&#128230;</span>
+            프로젝트 정보
+          </span>
+          <span class="card-badge" id="projectsBadge" style="background:var(--accent-soft);color:var(--accent)">...</span>
+        </div>
+        <div class="card-body" id="projectsBody">
+          <div class="skeleton"></div>
+          <div class="skeleton" style="width:70%"></div>
+          <div class="skeleton" style="width:85%"></div>
+        </div>
+      </div>
+
+      <!-- Section 4: TODO (full width) -->
+      <div class="card full-width" id="todoCard">
+        <div class="card-header">
+          <span class="card-title">
+            <span class="card-icon">&#128221;</span>
+            TODO
+          </span>
+          <span class="card-badge" id="todoBadge" style="background:var(--yellow-soft);color:var(--yellow)">...</span>
+        </div>
+        <div class="card-body" id="todoBody">
+          <div class="skeleton"></div>
+          <div class="skeleton" style="width:60%"></div>
+          <div class="skeleton" style="width:75%"></div>
+          <div class="skeleton" style="width:50%"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="dashboard-footer">
+      <span>YJLaser Dashboard v1.0.0</span>
+      <span>45초/60초 간격 자동 갱신 (상태/헬스체크)</span>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

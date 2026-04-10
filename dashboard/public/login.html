@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YJLaser Dashboard - Login</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    /* ── Login-specific enhancements ─────────── */
+    .login-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .login-logo {
+      font-size: 36px;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .login-card h1 {
+      letter-spacing: -0.5px;
+    }
+
+    /* Password input wrapper with icon */
+    .input-wrapper {
+      position: relative;
+    }
+    .input-wrapper .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: var(--text-dim);
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    .input-wrapper input {
+      padding-left: 40px !important;
+    }
+    .input-wrapper input:focus ~ .input-icon {
+      color: var(--accent);
+    }
+
+    /* Submit button states */
+    .btn-login {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+    }
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-login .btn-text { transition: opacity 0.2s; }
+    .btn-login.loading .btn-text { opacity: 0; }
+    .btn-login .spinner {
+      display: none;
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    .btn-login.loading .spinner { display: block; }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Error message styles */
+    .error-msg {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--red-soft);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: var(--radius-sm);
+      text-align: left;
+      animation: shake 0.3s ease-in-out;
+    }
+    .error-msg .error-icon {
+      flex-shrink: 0;
+      font-size: 14px;
+      margin-top: 1px;
+    }
+    .error-msg .error-text {
+      flex: 1;
+      line-height: 1.4;
+    }
+    .error-msg .error-detail {
+      display: block;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    /* Rate limit warning */
+    .error-msg.rate-limit {
+      background: var(--yellow-soft);
+      border-color: rgba(251, 191, 36, 0.2);
+      color: var(--yellow);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    /* Hidden utility */
+    .hidden { display: none !important; }
+
+    /* Footer hint */
+    .login-footer {
+      margin-top: 24px;
+      font-size: 11px;
+      color: var(--text-dim);
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body class="login-page">
+  <div class="login-container">
+    <div class="login-card">
+      <span class="login-logo" aria-hidden="true">&#x1F3ED;</span>
+      <h1>YJLaser Dashboard</h1>
+      <p class="login-subtitle">모노레포 모니터링 대시보드</p>
+
+      <form id="loginForm" autocomplete="off" novalidate>
+        <div class="form-group">
+          <div class="input-wrapper">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="비밀번호 입력"
+              required
+              autofocus
+              autocomplete="current-password"
+              aria-label="대시보드 비밀번호"
+              aria-describedby="loginError"
+            >
+            <span class="input-icon" aria-hidden="true">&#x1F512;</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login" id="btnLogin">
+          <span class="btn-text">로그인</span>
+          <span class="spinner" aria-hidden="true"></span>
+        </button>
+
+        <div id="loginError" class="error-msg hidden" role="alert" aria-live="polite">
+          <span class="error-icon" aria-hidden="true"></span>
+          <span class="error-text"></span>
+        </div>
+      </form>
+
+      <p class="login-footer">YJLaser 내부 네트워크 전용</p>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    // ── DOM Elements ──────────────────────────────────────────
+    const form = document.getElementById('loginForm');
+    const passwordInput = document.getElementById('password');
+    const btnLogin = document.getElementById('btnLogin');
+    const errorEl = document.getElementById('loginError');
+    const errorIcon = errorEl.querySelector('.error-icon');
+    const errorText = errorEl.querySelector('.error-text');
+
+    // ── State ─────────────────────────────────────────────────
+    let isSubmitting = false;
+    let retryTimer = null;
+
+    // ── Error display ─────────────────────────────────────────
+    /**
+     * Show an error message with appropriate styling.
+     * @param {'auth'|'rate-limit'|'network'|'validation'} type
+     * @param {string} message - Main error message
+     * @param {string} [detail] - Optional secondary detail text
+     */
+    function showError(type, message, detail) {
+      // Clear any existing retry timer
+      if (retryTimer) {
+        clearInterval(retryTimer);
+        retryTimer = null;
+      }
+
+      // Set icon and style based on type
+      errorEl.className = 'error-msg';
+      switch (type) {
+        case 'rate-limit':
+          errorIcon.textContent = '\u26A0\uFE0F';
+          errorEl.classList.add('rate-limit');
+          break;
+        case 'network':
+          errorIcon.textContent = '\uD83D\uDD0C';
+          break;
+        case 'validation':
+          errorIcon.textContent = '\u2757';
+          break;
+        case 'auth':
+        default:
+          errorIcon.textContent = '\uD83D\uDD12';
+          break;
+      }
+
+      // Build message content
+      let html = message;
+      if (detail) {
+        html += '<span class="error-detail">' + escapeHtml(detail) + '</span>';
+      }
+      errorText.innerHTML = html;
+
+      errorEl.classList.remove('hidden');
+
+      // Re-trigger shake animation
+      errorEl.style.animation = 'none';
+      // Force reflow to restart animation
+      void errorEl.offsetHeight;
+      errorEl.style.animation = '';
+    }
+
+    function hideError() {
+      errorEl.classList.add('hidden');
+      if (retryTimer) {
+        clearInterval(retryTimer);
+        retryTimer = null;
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ── Loading state ─────────────────────────────────────────
+    function setLoading(loading) {
+      isSubmitting = loading;
+      btnLogin.disabled = loading;
+      passwordInput.disabled = loading;
+
+      if (loading) {
+        btnLogin.classList.add('loading');
+      } else {
+        btnLogin.classList.remove('loading');
+      }
+    }
+
+    // ── Rate limit countdown ──────────────────────────────────
+    function startRetryCountdown(seconds) {
+      let remaining = seconds;
+
+      function updateCountdown() {
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        const timeStr = mins > 0
+          ? mins + '분 ' + secs + '초'
+          : secs + '초';
+        showError(
+          'rate-limit',
+          escapeHtml('너무 많은 로그인 시도입니다.'),
+          remaining + '초 후 다시 시도해주세요 (' + timeStr + ' 남음)'
+        );
+      }
+
+      updateCountdown();
+      retryTimer = setInterval(function() {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(retryTimer);
+          retryTimer = null;
+          hideError();
+          passwordInput.disabled = false;
+          passwordInput.focus();
+        } else {
+          updateCountdown();
+        }
+      }, 1000);
+    }
+
+    // ── Form submission ───────────────────────────────────────
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      // Prevent double submission
+      if (isSubmitting) return;
+
+      const password = passwordInput.value.trim();
+
+      // Client-side validation
+      if (!password) {
+        showError('validation', escapeHtml('비밀번호를 입력해주세요.'));
+        passwordInput.focus();
+        return;
+      }
+
+      hideError();
+      setLoading(true);
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: password }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          // Authentication succeeded — redirect to dashboard
+          // Brief visual feedback before redirect
+          btnLogin.querySelector('.btn-text').textContent = '\u2713 \uC131\uACF5';
+          setTimeout(function() {
+            window.location.href = '/';
+          }, 300);
+          return;
+        }
+
+        // Handle different error responses
+        setLoading(false);
+        passwordInput.value = '';
+        passwordInput.focus();
+
+        if (res.status === 429) {
+          // Rate limited — too many attempts
+          const retryAfter = data.retryAfterSec || 60;
+          startRetryCountdown(retryAfter);
+          passwordInput.disabled = true;
+          return;
+        }
+
+        if (res.status === 400) {
+          // Validation error from server
+          showError('validation', escapeHtml(data.error || '입력값이 올바르지 않습니다.'));
+          return;
+        }
+
+        if (res.status === 401) {
+          // Wrong password
+          const remaining = data.remaining;
+          let detail = null;
+          if (typeof remaining === 'number' && remaining <= 5) {
+            detail = '남은 시도 횟수: ' + remaining + '회';
+          }
+          showError('auth', escapeHtml(data.error || '비밀번호가 올바르지 않습니다.'), detail);
+          return;
+        }
+
+        // Other server errors
+        showError('network', escapeHtml(data.error || '로그인에 실패했습니다.'));
+
+      } catch (err) {
+        // Network or unexpected error
+        setLoading(false);
+        showError(
+          'network',
+          escapeHtml('서버에 연결할 수 없습니다.'),
+          '네트워크 연결을 확인하고 다시 시도해주세요.'
+        );
+      }
+    });
+
+    // ── Clear error on input ──────────────────────────────────
+    passwordInput.addEventListener('input', function() {
+      if (!errorEl.classList.contains('hidden') && !retryTimer) {
+        hideError();
+      }
+    });
+
+    // ── Check if already authenticated (redirect) ─────────────
+    (async function checkAuth() {
+      try {
+        const res = await fetch('/api/status', { method: 'GET' });
+        if (res.ok) {
+          // Already authenticated, redirect to dashboard
+          window.location.href = '/';
+        }
+      } catch (e) {
+        // Not authenticated or server unreachable — stay on login page
+      }
+    })();
+  </script>
+</body>
+</html>

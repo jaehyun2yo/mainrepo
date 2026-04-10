@@ -1,0 +1,14 @@
+{
+  "name": "yjlaser-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "YJLaser 모노레포 대시보드 — 진행상황, TODO, 헬스체크 모니터링",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}

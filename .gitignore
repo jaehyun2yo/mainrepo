@@ -1,0 +1,31 @@
+# 하위 프로젝트 제외 (각각 별도 저장소로 관리)
+yjlaser_website/
+외부웹하드동기화프로그램/
+유진레이저목형 관리프로그램/
+레이저네스팅프로그램/
+computeroff/
+도면자동화프로그램/
+현재 아직 사용안하는것들/
+yjlaser_api_client/
+
+# generated 파일 (스크립트로 재생성 가능)
+**/generated/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Claude 캐시
+.claude/
+.omc/
+
+# 기타
+*.log

@@ -1,0 +1,14 @@
+{
+  "name": "yjlaser-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "YJLaser 프로젝트 개발 도구",
+  "scripts": {
+    "generate:types": "npx tsx scripts/generate-api-types.ts"
+  },
+  "devDependencies": {
+    "ts-morph": "^24.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

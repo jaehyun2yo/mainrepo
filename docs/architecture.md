@@ -75,3 +75,36 @@
 | 네스팅프로그램 | PyInstaller → Nasting.exe | Windows | — |
 | computeroff (서버) | Railway (NIXPACKS) | 클라우드 | — |
 | computeroff (에이전트) | Inno Setup + PyInstaller | Windows (7+) | x64/x86 지원 |
+
+## 환경 분리 (Dev / Prod)
+
+개발 환경과 프로덕션 환경은 완전히 분리되어 있다.
+
+### 구성
+
+| 자원 | 개발 (Development) | 프로덕션 (Production) |
+|------|-------------------|---------------------|
+| DB | Supabase 개발 프로젝트 | Supabase 프로덕션 프로젝트 (`ibsbcuumkdhwesrpaqeb`) |
+| R2 스토리지 | `yjlaser-dev` 버킷 | `yjlaser` 버킷 |
+| Next.js | localhost:3000 | Vercel (yjlaser.net) |
+| NestJS | localhost:4000 | Railway |
+
+### 환경 설정 파일
+
+- `.env.example` — 전체 변수 목록 + 설명 (커밋됨, 값 없음)
+- `.env.local` — 로컬 개발 값 (gitignore, 개발 DB/R2 사용)
+- Vercel/Railway 대시보드 — 프로덕션 값
+
+NestJS는 루트 `.env.local`에서 환경변수를 로드한다 (`webhard-api/.env`는 사용하지 않음).
+
+### DB 연결 모드
+
+Supabase Pooler를 통해 연결한다:
+- `DATABASE_URL`: Transaction 모드 (포트 6543) + `pgbouncer=true&statement_cache_size=0`
+- `DIRECT_URL`: Direct 연결 (포트 5432) — 마이그레이션 전용
+
+### 스키마 관리
+
+Prisma Migrate로 관리한다:
+- 개발: `npx prisma migrate dev --name {이름}`
+- 프로덕션: Railway 배포 시 `npx prisma migrate deploy` 자동 실행
